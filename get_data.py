@@ -9,11 +9,6 @@ from selenium.webdriver.common.by import By
 from dataclasses import dataclass
 import time
 
-# result = {
-#     'hotels.com': [],
-#     'naver': [],
-# }
-
 
 @dataclass
 class Hotel:
@@ -27,7 +22,6 @@ class Hotel:
 
 
 # 호텔스닷컴
-
 
 def from_hotels_com(driver: WebDriver, start_date, end_date, destination):
 
@@ -76,6 +70,7 @@ def from_naver(driver, start_date, end_date, destination):
     data_list: list[Hotel] = []
 
     driver.get(url)
+    time.sleep(3)
 
     hotel_elem_list = driver.find_elements(
         By.XPATH, "//li[contains(@class, 'SearchList_HotelItem')]")
