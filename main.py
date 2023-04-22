@@ -10,8 +10,8 @@ import webbrowser
 BACKGROUND_COLOR = "#B1DDC6"
 
 SITE_LIST = [
-    {'name': 'hotels_com', 'func': from_hotels_com},
-    {'name': 'naver', 'func': from_naver},
+    {'name': 'hotels_com', 'func': from_hotels_com, 'result': []},
+    {'name': 'naver', 'func': from_naver, 'result': []},
 ]
 
 start_date = '2023-05-20'
@@ -56,6 +56,7 @@ class App:
 
         self.result_widget_list = [self.set_result_widget(site)
                                    for site in SITE_LIST]
+        self.result_list: list[list[Hotel]]
 
     def set_result_widget(self, site):
         result_frame = tk.LabelFrame(self.main_frame, text=site['name'])
@@ -66,6 +67,7 @@ class App:
         for i in range(self.column_len):
             column = tk.Listbox(result_frame, width=0, height=0)
             column.insert(0, self.column_name_list[i])
+            column.bind('<Double-Button-1>', self.weblink)
             column_list.append(column)
 
         # self.listbox = tk.Listbox(self.root, width=0)
@@ -87,8 +89,16 @@ class App:
         return column_list
 
     def weblink(self, *args):
-        idx = self.listbox.curselection()[0]
-        webbrowser.open(url=self.result[idx].link, new=2)
+        for rw_idx, result_widget in enumerate(self.result_widget_list):
+            for column in result_widget:
+                try:
+                    hotel_idx = column.curselection()[0]
+                    print(rw_idx, hotel_idx)
+                    webbrowser.open(
+                        url=self.result_list[rw_idx][hotel_idx-1].link, new=2)
+                    break
+                except IndexError:
+                    pass
 
     def get_data(self):
         # 기존 리스트 정리
@@ -105,27 +115,26 @@ class App:
             options=options,
         )
 
-        result_list = [
+        # 검색 결과 저장
+        self.result_list = [
             site['func'](self.driver, start_date, end_date, destination)
             for site in SITE_LIST
         ]
 
-        # self.result = from_hotels_com(
-        #     self.driver, start_date, end_date, destination)
-        print('검색 종료')
-        # print(len(self.result))
+        self.display()
 
-        self.display(result_list)
-
-    def display(self, result_list: list[list[Hotel]]):
-        # 새 리스트 생성
-        for result_idx, result in enumerate(result_list):
+    def display(self):
+        # 사이트 결과마다 반복
+        for result_idx, result in enumerate(self.result_list):
+            result_widget = self.result_widget_list[result_idx]
+            # 결과 중에서 호텔마다 반복
             for ht_idx, hotel in enumerate(result):
                 row_num = ht_idx + 1
                 col = [row_num, hotel.name, hotel.grade,
                        hotel.rating, hotel.price]
+                # 각 항목 배치
                 for col_idx in range(self.column_len):
-                    self.result_widget_list[result_idx][col_idx].insert(
+                    result_widget[col_idx].insert(
                         row_num,
                         col[col_idx],
                     )
@@ -134,5 +143,5 @@ class App:
 app = App()
 app.root.mainloop()
 
-# driver.quit()
-# print('크롬 종료')
+app.driver.quit()
+print('크롬 종료')

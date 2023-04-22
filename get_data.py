@@ -31,7 +31,7 @@ def from_hotels_com(driver: WebDriver, start_date, end_date, destination):
     data_list: list[Hotel] = []
 
     driver.get(url)
-    time.sleep(3)
+    time.sleep(2)
 
     hotel_elem_list = driver.find_elements(
         By.XPATH, '//div[@data-stid="property-listing-results"]/div')
@@ -70,7 +70,7 @@ def from_naver(driver, start_date, end_date, destination):
     data_list: list[Hotel] = []
 
     driver.get(url)
-    time.sleep(3)
+    time.sleep(2)
 
     hotel_elem_list = driver.find_elements(
         By.XPATH, "//li[contains(@class, 'SearchList_HotelItem')]")
