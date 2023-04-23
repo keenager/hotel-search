@@ -1,3 +1,4 @@
+from operator import itemgetter, attrgetter
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -30,8 +31,10 @@ options.add_argument(
 class App:
     def __init__(self) -> None:
         self.driver: WebDriver
-        self.column_name_list = ['번호', '호텔 이름', '호텔등급', '평점', '가격']
-        self.column_len = len(self.column_name_list)
+        self.column_names = {'번호': 'num', '호텔 이름': 'name',
+                             '호텔등급': 'grade', '평점': 'rating', '가격': 'price'}
+        self.column_len = len(self.column_names)
+        self.sort_toggle = True
 
         self.root = tk.Tk()
         self.root.title('호텔 찾기')
@@ -64,50 +67,44 @@ class App:
 
         column_list: list[tk.Listbox] = []
 
-        for i in range(self.column_len):
+        for column_name in self.column_names.keys():
             column = tk.Listbox(result_frame, width=0, height=0)
-            column.insert(0, self.column_name_list[i])
-            column.bind('<Double-Button-1>', self.weblink)
+            column.insert(0, column_name)
+            column.bind('<Double-Button-1>', self.web_link)
             column_list.append(column)
 
-        # self.listbox = tk.Listbox(self.root, width=0)
-        # self.scrollbar = tk.Scrollbar(self.listbox, orient='vertical')
-        # self.listbox.config(yscrollcommand=self.scrollbar.set)
-        # self.scrollbar.config(command=self.listbox.yview)
-        # self.listbox.insert(0, '결과 리스트 입니다.')
-        # # '<<ListboxSelect>>'
-        # self.listbox.bind('<Double-Button-1>', self.weblink)
-
-        # self.btn_1.grid(column=0, row=0, columnspan=2)
-        # self.listbox.grid(column=1, row=1)
-
         # -------- 위젯 배치 ----------#
-
         for i in range(self.column_len):
             column_list[i].grid(row=0, column=i)
 
         return column_list
 
-    def weblink(self, *args):
-        for rw_idx, result_widget in enumerate(self.result_widget_list):
+    def web_link(self, *args):
+        for result_idx, result_widget in enumerate(self.result_widget_list):
             for column in result_widget:
                 try:
-                    hotel_idx = column.curselection()[0]
-                    print(rw_idx, hotel_idx)
-                    webbrowser.open(
-                        url=self.result_list[rw_idx][hotel_idx-1].link, new=2)
+                    selected_row_idx = column.curselection()[0]
+                    if selected_row_idx == 0:
+                        column_name = column.get(0)
+                        self.sort_results(result_idx, column_name)
+                    else:
+                        webbrowser.open(
+                            url=self.result_list[result_idx][selected_row_idx-1].link, new=2)
                     break
                 except IndexError:
                     pass
 
-    def get_data(self):
-        # 기존 리스트 정리
+    def clear_list(self):
         for result_widget in self.result_widget_list:
             for i in range(self.column_len):
                 listbox = result_widget[i]
                 listbox.delete(1, listbox.size() - 1)
 
         self.root.update()
+
+    def get_data(self):
+        # 기존 리스트 정리
+        self.clear_list()
 
         # 검색 시작
         self.driver = webdriver.Chrome(
@@ -138,6 +135,20 @@ class App:
                         row_num,
                         col[col_idx],
                     )
+
+    def sort_results(self, result_idx, col_name):
+        if col_name == '번호':
+            return
+
+        self.clear_list()
+
+        col_name = self.column_names[col_name]
+        self.sort_toggle = not self.sort_toggle
+
+        self.result_list[result_idx].sort(
+            key=attrgetter(col_name), reverse=self.sort_toggle)
+
+        self.display()
 
 
 app = App()
