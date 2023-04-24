@@ -1,3 +1,4 @@
+from enum import Enum
 from operator import itemgetter, attrgetter
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -11,9 +12,18 @@ import webbrowser
 BACKGROUND_COLOR = "#B1DDC6"
 
 SITE_LIST = [
-    {'name': 'hotels_com', 'func': from_hotels_com, 'result': []},
-    {'name': 'naver', 'func': from_naver, 'result': []},
+    {'name': 'HOTEL.COM', 'func': from_hotels_com},
+    {'name': 'NAVER', 'func': from_naver},
 ]
+
+
+class Columns(Enum):
+    NUM = '번호'
+    NAME = '호텔 이름'
+    GRADE = '호텔등급'
+    RATING = '평점'
+    PRICE = '가격'
+
 
 start_date = '2023-05-20'
 end_date = '2023-05-21'
@@ -31,9 +41,9 @@ options.add_argument(
 class App:
     def __init__(self) -> None:
         self.driver: WebDriver
-        self.column_names = {'번호': 'num', '호텔 이름': 'name',
-                             '호텔등급': 'grade', '평점': 'rating', '가격': 'price'}
-        self.column_len = len(self.column_names)
+        # self.column_names = {'번호': 'num', '호텔 이름': 'name',
+        #  '호텔등급': 'grade', '평점': 'rating', '가격': 'price'}
+        self.column_len = len(Columns)
         self.sort_toggle = True
 
         self.root = tk.Tk()
@@ -65,28 +75,30 @@ class App:
         result_frame = tk.LabelFrame(self.main_frame, text=site['name'])
         result_frame.pack()
 
-        column_list: list[tk.Listbox] = []
+        col_widget_list: list[tk.Listbox] = []
 
-        for column_name in self.column_names.keys():
-            column = tk.Listbox(result_frame, width=0, height=0)
-            column.insert(0, column_name)
-            column.bind('<Double-Button-1>', self.web_link)
-            column_list.append(column)
+        for column in Columns:
+            col_widget = tk.Listbox(result_frame, width=0, height=0)
+            col_widget.insert(0, column.value)
+            col_widget.bind('<Double-Button-1>', self.web_link)
+            col_widget_list.append(col_widget)
 
         # -------- 위젯 배치 ----------#
         for i in range(self.column_len):
-            column_list[i].grid(row=0, column=i)
+            col_widget_list[i].grid(row=0, column=i)
 
-        return column_list
+        return col_widget_list
 
     def web_link(self, *args):
+        # 사이트 결과마다 반복
         for result_idx, result_widget in enumerate(self.result_widget_list):
-            for column in result_widget:
+            # 항목(칼럼)마다 반복
+            for col_widget in result_widget:
                 try:
-                    selected_row_idx = column.curselection()[0]
+                    selected_row_idx = col_widget.curselection()[0]
                     if selected_row_idx == 0:
-                        column_name = column.get(0)
-                        self.sort_results(result_idx, column_name)
+                        col_name = col_widget.get(0)
+                        self.sort_results(result_idx, col_name)
                     else:
                         webbrowser.open(
                             url=self.result_list[result_idx][selected_row_idx-1].link, new=2)
@@ -97,8 +109,8 @@ class App:
     def clear_list(self):
         for result_widget in self.result_widget_list:
             for i in range(self.column_len):
-                listbox = result_widget[i]
-                listbox.delete(1, listbox.size() - 1)
+                col_widget = result_widget[i]
+                col_widget.delete(1, col_widget.size() - 1)
 
         self.root.update()
 
@@ -127,22 +139,29 @@ class App:
             # 결과 중에서 호텔마다 반복
             for ht_idx, hotel in enumerate(result):
                 row_num = ht_idx + 1
-                col = [row_num, hotel.name, hotel.grade,
-                       hotel.rating, hotel.price]
                 # 각 항목 배치
-                for col_idx in range(self.column_len):
-                    result_widget[col_idx].insert(
-                        row_num,
-                        col[col_idx],
-                    )
+                for col_widget in result_widget:
+                    col_name = col_widget.get(0)
+                    if col_name == Columns.NUM.value:
+                        col_widget.insert(row_num, row_num)
+                    elif col_name == Columns.PRICE.value:
+                        price = getattr(hotel, Columns(col_name).name.lower())
+                        price = '{:,}'.format(price) + '원'
+                        col_widget.insert(row_num, price)
+                    else:
+                        col_widget.insert(
+                            row_num,
+                            getattr(hotel, Columns(col_name).name.lower())
+                        )
 
     def sort_results(self, result_idx, col_name):
-        if col_name == '번호':
+        if col_name == Columns.NUM.value:
             return
 
         self.clear_list()
 
-        col_name = self.column_names[col_name]
+        # col_name = self.column_names[col_name]
+        col_name = Columns(col_name).name.lower()
         self.sort_toggle = not self.sort_toggle
 
         self.result_list[result_idx].sort(

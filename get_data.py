@@ -16,7 +16,7 @@ class Hotel:
     name: str = ''
     grade: str = ''
     rating: str = ''
-    price: str = ''
+    price: int = 0
     link: str = ''
     err_msg: str = ''
 
@@ -46,6 +46,7 @@ def from_hotels_com(driver: WebDriver, start_date, end_date, destination):
                                                    ".//span[@class='is-visually-hidden' and contains(text(), '이용 후기')]").text
             hotel.price = hotel_elem.find_element(By.XPATH,
                                                   ".//div[contains(text(), '현재 요금')]").text
+            hotel.price = int(hotel.price.split('₩')[1].replace(',', ''))
             hotel.link = hotel_elem.find_element(By.XPATH,
                                                  ".//a[@data-stid='open-hotel-information']").get_attribute('href')
         except NoSuchElementException as e:
@@ -59,7 +60,7 @@ def from_hotels_com(driver: WebDriver, start_date, end_date, destination):
 
 # 네이버
 
-def from_naver(driver, start_date, end_date, destination):
+def from_naver(driver: WebDriver, start_date, end_date, destination):
     if destination == '강원':
         destination = 'Gangwon_Province'
     elif destination == '경기':
@@ -85,6 +86,7 @@ def from_naver(driver, start_date, end_date, destination):
                                                    ".//i[contains(@class, 'Detail_score')]").text
             hotel.price = hotel_elem.find_element(By.XPATH,
                                                   ".//em[contains(@class, 'Price_show_price')]").text
+            hotel.price = int(hotel.price.split('원')[0].replace(',', ''))
             hotel.link = hotel_elem.find_element(By.XPATH,
                                                  ".//a[contains(@class, 'SearchList_anchor')]").get_attribute('href')
         except NoSuchElementException as e:
