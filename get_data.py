@@ -40,10 +40,15 @@ def from_hotels_com(driver: WebDriver, start_date, end_date, destination):
         hotel = Hotel()
         try:
             hotel.name = hotel_elem.find_element(By.TAG_NAME, 'h4').text
+
             hotel.grade = hotel_elem.find_element(By.XPATH,
                                                   ".//div[@class='uitk-rating']").text
+            hotel.grade = hotel.grade.replace('5점 만점 중 ', '')
+
             hotel.rating = hotel_elem.find_element(By.XPATH,
                                                    ".//span[@class='is-visually-hidden' and contains(text(), '이용 후기')]").text
+            hotel.rating = hotel.rating.replace('10점 만점 중 ', '')
+
             hotel.price = hotel_elem.find_element(By.XPATH,
                                                   ".//div[contains(text(), '현재 요금')]").text
             hotel.price = int(hotel.price.split('₩')[1].replace(',', ''))
@@ -71,7 +76,7 @@ def from_naver(driver: WebDriver, start_date, end_date, destination):
     data_list: list[Hotel] = []
 
     driver.get(url)
-    time.sleep(2)
+    time.sleep(1)
 
     hotel_elem_list = driver.find_elements(
         By.XPATH, "//li[contains(@class, 'SearchList_HotelItem')]")

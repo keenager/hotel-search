@@ -41,35 +41,51 @@ options.add_argument(
 class App:
     def __init__(self) -> None:
         self.driver: WebDriver
-        # self.column_names = {'번호': 'num', '호텔 이름': 'name',
-        #  '호텔등급': 'grade', '평점': 'rating', '가격': 'price'}
+        self.result_list: list[list[Hotel]]
         self.column_len = len(Columns)
         self.sort_toggle = True
 
+        # root window
         self.root = tk.Tk()
         self.root.title('호텔 찾기')
-        self.root.geometry('1280x960')
+        self.root.geometry('960x640')
         self.root.config(padx=20, pady=20)
 
-        # -------- 프레임 ----------#
-        self.top_frame = tk.Frame(
-            self.root, width=1000, height=50, padx=10, pady=10, bg='red')
+        # scrollbar 생성을 위한 frame 작업
+        self.outer_frame = tk.Frame(self.root)
+        self.outer_frame.pack(fill='both', expand=1)
+
+        self.canvas = tk.Canvas(self.outer_frame)
+        self.canvas.pack(side='left', fill='both', expand=1)
+
+        self.scrollbar = tk.Scrollbar(
+            self.outer_frame, orient='vertical', command=self.canvas.yview)
+        self.scrollbar.pack(side='right', fill='y')
+
+        self.canvas.config(yscrollcommand=self.scrollbar.set)
+        self.canvas.bind(
+            '<Configure>',
+            lambda e: self.canvas.config(scrollregion=self.canvas.bbox('all'))
+        )
+        self.canvas.bind_all('<MouseWheel>', self.on_mouse_wheel)
+
+        # -------- 실제 내용 ----------#
         self.main_frame = tk.Frame(
-            self.root, width=1000, height=500, padx=10, pady=10, bg='green')
+            self.canvas, width=960, height=640, padx=10, pady=10, bg='green')
 
-        self.top_frame.pack()
-        self.main_frame.pack()
-
-        self.btn_start = tk.Button(self.top_frame,
+        self.btn_start = tk.Button(self.main_frame,
                                    text='시작',
                                    command=self.get_data,
                                    )
-
-        self.btn_start.place(x=500)
+        self.btn_start.pack()
 
         self.result_widget_list = [self.set_result_widget(site)
                                    for site in SITE_LIST]
-        self.result_list: list[list[Hotel]]
+
+        self.canvas.create_window((0, 0), window=self.main_frame, anchor='nw')
+
+    def on_mouse_wheel(self, event):
+        self.canvas.yview_scroll(-1*(event.delta), 'units')
 
     def set_result_widget(self, site):
         result_frame = tk.LabelFrame(self.main_frame, text=site['name'])
@@ -146,7 +162,7 @@ class App:
                         col_widget.insert(row_num, row_num)
                     elif col_name == Columns.PRICE.value:
                         price = getattr(hotel, Columns(col_name).name.lower())
-                        price = '{:,}'.format(price) + '원'
+                        price = f'{price:9,}원'
                         col_widget.insert(row_num, price)
                     else:
                         col_widget.insert(
